@@ -14,6 +14,7 @@ sigma = 0.5
 
 INTENSITY_THRESHOLD = 1e-3
 
+
 def loop_over_positions(shape, k=0) -> list[tuple]: 
     """Provides list of all positions in an ndarray of given shape.
 
@@ -149,38 +150,47 @@ def nematic_field(img:np.ndarray, x, y, r=2, **kwargs) -> np.ndarray:
     uniform_bg = True if 'uniform_bg' not in kwargs.keys() else kwargs['uniform_bg']
     
     imghelper = np.zeros(img.shape)
+    h,w = img.shape
+    rl, cl = max((min(h/x,w/y)//2),1), max((min(h/x,w/y)//8),1)
+    if rl==1 or cl==1:
+        def drawer(t1,t2):
+            left, right = complex((t1+t2*1j) - (min(h/x,w/y)//4)*np.exp(1j*phi)), complex((t1+t2*1j) + (min(h/x,w/y)//4)*np.exp(1j*phi))
+            return sk.draw.line(int(left.real), int(left.imag), int(right.real), int(right.imag))
+    else:
+        def drawer(t1,t2):
+            return sk.draw.ellipse(t1,t2,rl,cl,img.shape,rotation=phi)
+        
     if uniform_bg:
         for a,pos in tqdm(tesselate(img, x,y, debug=True)):
             nem = integrate_over_area(a,r)
             Qnorm, phi = extract(nem)
             t1, t2 = int((pos[0]+pos[1])/2), int((pos[2]+pos[3])/2)
-            left, right = complex((t1+t2*1j) - (r+1)*np.exp(1j*phi)), complex((t1+t2*1j) + (r+1)*np.exp(1j*phi))
-            imghelper[sk.draw.line(int(left.real), int(left.imag), int(right.real), int(right.imag))] = Qnorm
+            imghelper[drawer(t1,t2)] = Qnorm
     else:
         for a,pos in tqdm(tesselate(img, x,y, debug=True)):
             nem = integrate_over_area(a,r)
             Qnorm, phi = extract(nem)
             imghelper[pos[0]:pos[1],pos[2]:pos[3]] = Qnorm
             t1, t2 = int((pos[0]+pos[1])/2), int((pos[2]+pos[3])/2)
-            left, right = complex((t1+t2*1j) - (r+1)*np.exp(1j*phi)), complex((t1+t2*1j) + (r+1)*np.exp(1j*phi))
-            imghelper[sk.draw.line(int(left.real), int(left.imag), int(right.real), int(right.imag))] = 0
+            imghelper[drawer(t1,t2)] = 0
     return imghelper
     
-    
 
-IMG = make_random_line_image(h,w,n)
-#plt.imshow(IMG)
-#plt.show()
-sk.io.imsave('test.png',IMG)
-#A = tesselate(IMG, 3,4, debug=True)
+if __name__ == '__main__':
+
+    IMG = make_random_line_image(h,w,n)
+    #plt.imshow(IMG)
+    #plt.show()
+    sk.io.imsave('test2.png',IMG)
+    #A = tesselate(IMG, 3,4, debug=True)
 
 
-#IMG = 1*(sk.io.imread('dessin.png') > 0)
-nem_field = nematic_field(IMG, 30, 40)
+    #IMG = 1*(sk.io.imread('dessin.png') > 0)
+    nem_field = nematic_field(IMG, 15, 20)
 
-#fig, (ax1,ax2) = plt.subplots(1,2)
-#ax1.imshow(IMG)
-#ax2.imshow(nem_field)
-#plt.show()
+    #fig, (ax1,ax2) = plt.subplots(1,2)
+    #ax1.imshow(IMG)
+    #ax2.imshow(nem_field)
+    #plt.show()
 
-sk.io.imsave('test_uniformbg.tif',np.array([IMG, nem_field/np.max(nem_field)]))
+    sk.io.imsave('test2_uniformbg.tif',np.array([IMG, nem_field/np.max(nem_field)]))
